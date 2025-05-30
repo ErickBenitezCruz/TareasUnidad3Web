@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personajes de Videojuegos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .editable {
+            cursor: pointer;
+        }
+        .editable:hover {
+            background-color: #f0f0f0;
+        }
+        .alert {
+            display: none;
+            margin-top: 20px;
+        }
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h1 class="card-title"><i class="bi bi-joystick"></i> Personajes de Videojuegos</h1>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" id="busqueda" class="form-control" placeholder="Buscar personajes...">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                       <button class="btn btn-success" onclick="abrirModalAgregar()">
+    <i class="bi bi-plus-circle"></i> Agregar Personaje
+</button>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" id="alertSuccess"></div>
+                <div class="alert alert-danger" id="alertError"></div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Videojuego</th>
+                                <th>Año</th>
+                                <th>Desarrollador</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPersonajes"></tbody>
+                    </table>
+                </div>
+
+                <nav aria-label="Paginación">
+                    <ul class="pagination" id="paginacion">
+                        <!-- La paginación se generará dinámicamente con JavaScript -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-4">
+  <div class="card-header bg-info text-white">
+    <h2><i class="bi bi-card-text"></i> Formulario de Contacto</h2>
+  </div>
+  <div class="card-body">
+    <form id="formContacto">
+      <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" class="form-control" id="nombreForm" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="emailForm" required>
+      </div>
+      <div class="mb-3">
+        <label for="mensaje" class="form-label">Mensaje</label>
+        <textarea class="form-control" id="mensajeForm" rows="3" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Enviar</button>
+    </form>
+    <div class="alert alert-success mt-3" id="formSuccess" style="display: none;"></div>
+    <div class="alert alert-danger mt-3" id="formError" style="display: none;"></div>
+  </div>
+</div>
+
+    <!-- Modal para agregar/editar personaje -->
+    <div class="modal fade" id="modalPersonaje" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitulo">Agregar Personaje</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formPersonaje">
+                        <input type="hidden" id="personajeId">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="videojuego" class="form-label">Videojuego</label>
+                            <input type="text" class="form-control" id="videojuego" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="año" class="form-label">Año de lanzamiento</label>
+                            <input type="number" class="form-control" id="año" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="desarrollador" class="form-label">Desarrollador</label>
+                            <input type="text" class="form-control" id="desarrollador" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let paginaActual = 1;
+        const porPagina = 5;
+        let totalPaginas = 1;
+        let busquedaActual = '';
+
+        // Elementos del DOM
+        const tablaPersonajes = document.getElementById('tablaPersonajes');
+        const paginacion = document.getElementById('paginacion');
+        const btnBuscar = document.getElementById('btnBuscar');
+        const busqueda = document.getElementById('busqueda');
+        const alertSuccess = document.getElementById('alertSuccess');
+        const alertError = document.getElementById('alertError');
+        const modalPersonaje = new bootstrap.Modal(document.getElementById('modalPersonaje'));
+        const formPersonaje = document.getElementById('formPersonaje');
+        const btnGuardar = document.getElementById('btnGuardar');
+        const modalTitulo = document.getElementById('modalTitulo');
+        const personajeId = document.getElementById('personajeId');
+        const nombre = document.getElementById('nombre');
+        const videojuego = document.getElementById('videojuego');
+        const año = document.getElementById('año');
+        const desarrollador = document.getElementById('desarrollador');
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', cargarPersonajes);
+        btnBuscar.addEventListener('click', () => {
+            busquedaActual = busqueda.value;
+            paginaActual = 1;
+            cargarPersonajes();
+        });
+        busqueda.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                busquedaActual = busqueda.value;
+                paginaActual = 1;
+                cargarPersonajes();
+            }
+        });
+        btnGuardar.addEventListener('click', guardarPersonaje);
+
+        // Funciones
+        function mostrarAlerta(mensaje, tipo = 'success') {
+            const alerta = tipo === 'success' ? alertSuccess : alertError;
+            const otraAlerta = tipo === 'success' ? alertError : alertSuccess;
+            
+            otraAlerta.style.display = 'none';
+            alerta.textContent = mensaje;
+            alerta.style.display = 'block';
+            
+            setTimeout(() => {
+                alerta.style.display = 'none';
+            }, 5000);
+        }
+
+        function cargarPersonajes() {
+            let url = `http://localhost:3000/api/personajes?pagina=${paginaActual}&porPagina=${porPagina}`;
+            if (busquedaActual) {
+                url += `&busqueda=${encodeURIComponent(busquedaActual)}`;
+            }
+            
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    tablaPersonajes.innerHTML = '';
+                    data.datos.forEach(personaje => {
+                        const fila = document.createElement('tr');
+                        fila.innerHTML = `
+                            <td>${personaje.id}</td>
+                            <td class="editable" onclick="editarCampo(${personaje.id}, 'nombre', this)">${personaje.nombre}</td>
+                            <td class="editable" onclick="editarCampo(${personaje.id}, 'videojuego', this)">${personaje.videojuego}</td>
+                            <td class="editable" onclick="editarCampo(${personaje.id}, 'año_lanzamiento', this)">${personaje.año_lanzamiento}</td>
+                            <td class="editable" onclick="editarCampo(${personaje.id}, 'desarrollador', this)">${personaje.desarrollador}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary me-1" onclick="editarPersonaje(${personaje.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmarEliminar(${personaje.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tablaPersonajes.appendChild(fila);
+                    });
+                    
+                    // Actualizar paginación
+                    totalPaginas = data.paginacion.totalPaginas;
+                    actualizarPaginacion();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarAlerta('Error al cargar los personajes', 'error');
+                });
+        }
+
+        function actualizarPaginacion() {
+            paginacion.innerHTML = '';
+            
+            // Botón Anterior
+            const liAnterior = document.createElement('li');
+            liAnterior.className = `page-item ${paginaActual === 1 ? 'disabled' : ''}`;
+            liAnterior.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${paginaActual - 1})">&laquo;</a>`;
+            paginacion.appendChild(liAnterior);
+            
+            // Números de página
+            const inicio = Math.max(1, paginaActual - 2);
+            const fin = Math.min(totalPaginas, paginaActual + 2);
+            
+            for (let i = inicio; i <= fin; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === paginaActual ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${i})">${i}</a>`;
+                paginacion.appendChild(li);
+            }
+            
+            // Botón Siguiente
+            const liSiguiente = document.createElement('li');
+            liSiguiente.className = `page-item ${paginaActual === totalPaginas ? 'disabled' : ''}`;
+            liSiguiente.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${paginaActual + 1})">&raquo;</a>`;
+            paginacion.appendChild(liSiguiente);
+        }
+
+        function cambiarPagina(nuevaPagina) {
+            if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas && nuevaPagina !== paginaActual) {
+                paginaActual = nuevaPagina;
+                cargarPersonajes();
+            }
+        }
+
+        function abrirModalAgregar() {
+            modalTitulo.textContent = 'Agregar Personaje';
+            formPersonaje.reset();
+            personajeId.value = '';
+            modalPersonaje.show();
+        }
+
+        function editarPersonaje(id) {
+            fetch(`http://localhost:3000/api/personajes/${id}`)
+                .then(res => res.json())
+                .then(personaje => {
+                    modalTitulo.textContent = 'Editar Personaje';
+                    personajeId.value = personaje.id;
+                    nombre.value = personaje.nombre;
+                    videojuego.value = personaje.videojuego;
+                    año.value = personaje.año_lanzamiento;
+                    desarrollador.value = personaje.desarrollador;
+                    modalPersonaje.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarAlerta('Error al cargar el personaje', 'error');
+                });
+        }
+
+        function editarCampo(id, campo, elemento) {
+            const valorActual = elemento.textContent;
+            const nuevoValor = prompt(`Editar ${campo}:`, valorActual);
+            
+            if (nuevoValor !== null && nuevoValor !== valorActual) {
+                const datos = {};
+                datos[campo] = campo === 'año_lanzamiento' ? parseInt(nuevoValor) : nuevoValor;
+                
+                fetch(`http://localhost:3000/api/personajes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    elemento.textContent = datos[campo];
+                    mostrarAlerta('Personaje actualizado correctamente');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarAlerta('Error al actualizar el personaje', 'error');
+                });
+            }
+        }
+
+        function guardarPersonaje() {
+            const datos = {
+                nombre: nombre.value,
+                videojuego: videojuego.value,
+                año_lanzamiento: parseInt(año.value),
+                desarrollador: desarrollador.value
+            };
+            
+            const metodo = personajeId.value ? 'PUT' : 'POST';
+            const url = personajeId.value 
+                ? `http://localhost:3000/api/personajes/${personajeId.value}`
+                : 'http://localhost:3000/api/personajes';
+            
+            fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            })
+            .then(res => res.json())
+            .then(data => {
+                modalPersonaje.hide();
+                cargarPersonajes();
+                mostrarAlerta(personajeId.value 
+                    ? 'Personaje actualizado correctamente' 
+                    : 'Personaje agregado correctamente');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarAlerta('Error al guardar el personaje', 'error');
+            });
+        }
+
+        function confirmarEliminar(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este personaje?')) {
+                eliminarPersonaje(id);
+            }
+        }
+
+        function eliminarPersonaje(id) {
+            fetch(`http://localhost:3000/api/personajes/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(data => {
+                cargarPersonajes();
+                mostrarAlerta('Personaje eliminado correctamente');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarAlerta('Error al eliminar el personaje', 'error');
+            });
+        }
+
+        // Funciones globales para usar en eventos HTML
+        window.abrirModalAgregar = abrirModalAgregar;
+        window.cambiarPagina = cambiarPagina;
+        window.editarCampo = editarCampo;
+        window.editarPersonaje = editarPersonaje;
+        window.confirmarEliminar = confirmarEliminar;
+    </script>
+    <script>
+  // Añade esto al final de tu script existente
+  document.getElementById('formContacto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const datos = {
+      nombre: document.getElementById('nombreForm').value,
+      email: document.getElementById('emailForm').value,
+      mensaje: document.getElementById('mensajeForm').value
+    };
+
+    fetch('http://localhost:3000/api/personajes/formulario', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        mostrarAlertaForm('Formulario enviado correctamente', 'success');
+        document.getElementById('formContacto').reset();
+      } else {
+        mostrarAlertaForm(data.error || 'Error al enviar el formulario', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      mostrarAlertaForm('Error al enviar el formulario', 'error');
+    });
+  });
+
+  function mostrarAlertaForm(mensaje, tipo) {
+    const success = document.getElementById('formSuccess');
+    const error = document.getElementById('formError');
+    
+    if (tipo === 'success') {
+      success.textContent = mensaje;
+      success.style.display = 'block';
+      error.style.display = 'none';
+    } else {
+      error.textContent = mensaje;
+      error.style.display = 'block';
+      success.style.display = 'none';
+    }
+    
+    setTimeout(() => {
+      success.style.display = 'none';
+      error.style.display = 'none';
+    }, 5000);
+  }
+</script>
+</body>
